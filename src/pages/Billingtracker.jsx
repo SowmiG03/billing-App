@@ -107,7 +107,7 @@ export default function BillingTracker() {
   }
 
   function addItem() {
-    setItems((prev) => [...prev, initialItem()]);
+    setItems((prev) => [...prev, { ...initialItem(), id: Date.now() + Math.random() }]);
   }
 
   function removeItem(id) {
@@ -166,13 +166,45 @@ export default function BillingTracker() {
     showToast("Record deleted");
   }
 
-  function exportJSON() {
-    const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+  function exportExcel() {
+    const rows = [];
+
+    // Header
+    rows.push([
+      "Bill ID", "Customer Name", "Phone", "Payment Method",
+      "Item Name", "Qty", "Price (₹)", "Subtotal (₹)", "Bill Total (₹)", "Date", "Time",
+    ]);
+
+    // Data rows — one row per item
+    records.forEach((r) => {
+      r.items.forEach((it, idx) => {
+        rows.push([
+          r.id,
+          idx === 0 ? r.customerName : "",
+          idx === 0 ? r.phone : "",
+          idx === 0 ? r.paymentMethod : "",
+          it.name,
+          it.qty,
+          it.price,
+          it.subtotal,
+          idx === 0 ? r.total : "",
+          idx === 0 ? r.date : "",
+          idx === 0 ? r.time : "",
+        ]);
+      });
+    });
+
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    // BOM ensures ₹ renders correctly in Excel
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "billing_records.json";
+    a.download = "billing_records.csv";
     a.click();
-    showToast("JSON exported!");
+    showToast("Excel file exported!");
   }
 
   const filtered = records.filter(
@@ -259,7 +291,7 @@ export default function BillingTracker() {
                 <input
                   style={{ ...inputStyle, borderColor: errors.phone ? "#a32d2d" : "#d1d1d1" }}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/, "").slice(0, 10))}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   placeholder="e.g. 9876543210"
                   maxLength={10}
                 />
@@ -271,8 +303,8 @@ export default function BillingTracker() {
               <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>Payment method</label>
               <div style={{ display: "flex", gap: 8 }}>
                 {[
-                  { key: "cash", label: "💵 Cash", active: "badge-cash" },
-                  { key: "gpay", label: "📱 GPay", active: "badge-gpay" },
+                  { key: "cash", label: "💵 Cash" },
+                  { key: "gpay", label: "📱 GPay" },
                 ].map(({ key, label }) => (
                   <button
                     key={key}
@@ -305,6 +337,7 @@ export default function BillingTracker() {
                 <div key={i} style={{ fontSize: 12, color: "#888" }}>{h}</div>
               ))}
             </div>
+
             {items.map((item) => (
               <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 70px 90px 36px", gap: 8, marginBottom: 8 }}>
                 <input
@@ -337,7 +370,9 @@ export default function BillingTracker() {
                 </button>
               </div>
             ))}
+
             {errors.items && <div style={errStyle}>{errors.items}</div>}
+
             <button
               onClick={addItem}
               style={{ width: "100%", padding: "8px", border: "0.5px dashed #d1d1d1", borderRadius: 8, background: "transparent", fontSize: 13, color: "#888", cursor: "pointer", marginTop: 4 }}
@@ -373,18 +408,18 @@ export default function BillingTracker() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 15, fontWeight: 500 }}>All records</span>
               <button
-                onClick={exportJSON}
+                onClick={exportExcel}
                 style={{ border: "0.5px solid #d1d1d1", borderRadius: 8, background: "#fff", fontSize: 13, color: "#666", cursor: "pointer", padding: "5px 12px", display: "flex", alignItems: "center", gap: 5 }}
               >
-                ↓ Export JSON
+                ↓ Export Excel
               </button>
             </div>
 
             <input
-              style={{ ...inputStyle, marginBottom: 12, paddingLeft: 32, backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23888' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8' stroke='%23888' stroke-width='2' fill='none'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65' stroke='%23888' stroke-width='2'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "10px center" }}
+              style={{ ...inputStyle, marginBottom: 12 }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or phone..."
+              placeholder="🔍  Search by name or phone..."
             />
 
             {filtered.length === 0 ? (

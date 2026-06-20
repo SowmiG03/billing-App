@@ -5,7 +5,7 @@ const STORAGE_KEY = "billingRecords";
 const initialItem = () => ({ id: Date.now(), name: "", qty: 1, price: "" });
 
 function Badge({ method }) {
-  const styles =
+  const styles =  
     method === "cash"
       ? { background: "#EAF3DE", color: "#27500A" }
       : { background: "#E6F1FB", color: "#0C447C" };
@@ -282,7 +282,7 @@ export default function BillingTracker() {
                   style={{ ...inputStyle, borderColor: errors.customerName ? "#a32d2d" : "#d1d1d1" }}
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="e.g. Ravi Kumar"
+                  placeholder="e.g. Sowmiya"
                 />
                 {errors.customerName && <div style={errStyle}>{errors.customerName}</div>}
               </div>
@@ -354,7 +354,7 @@ export default function BillingTracker() {
                   onChange={(e) => updateItem(item.id, "qty", e.target.value)}
                 />
                 <input
-                  style={inputStyle}
+                  style={inputStyle} 
                   type="number"
                   min="0"
                   step="0.01"
